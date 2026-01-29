@@ -1,27 +1,21 @@
 import { motion } from 'framer-motion';
-import { X, Heart, Repeat2, Eye, MessageCircle, ExternalLink, Calendar, Users } from 'lucide-react';
+import { X, Heart, Repeat2, Eye, MessageCircle, ExternalLink, Users } from 'lucide-react';
 
 export default function UserModal({ user, onClose }) {
   if (!user) return null;
 
-  const formatNumber = (num) => {
-    if (!num) return '0';
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
+  const fmt = (n) => {
+    if (!n) return '0';
+    if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+    return n.toString();
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  // بهترین توییت
-  const bestTweet = user.tweets?.length > 0
-    ? user.tweets.reduce((best, t) => {
-        const score = (t.likes_count * 3) + (t.retweets_count * 5) + (t.views_count * 0.01);
-        const bestScore = (best.likes_count * 3) + (best.retweets_count * 5) + (best.views_count * 0.01);
-        return score > bestScore ? t : best;
+  const best = user.tweets?.length > 0
+    ? user.tweets.reduce((b, t) => {
+        const s = (t.likes_count * 3) + (t.retweets_count * 5) + (t.views_count * 0.01);
+        const bs = (b.likes_count * 3) + (b.retweets_count * 5) + (b.views_count * 0.01);
+        return s > bs ? t : b;
       }, user.tweets[0])
     : null;
 
@@ -42,129 +36,119 @@ export default function UserModal({ user, onClose }) {
       >
         {/* Header */}
         <div className="relative">
-          <div className="h-28 overflow-hidden rounded-t-3xl">
+          <div className="h-28 rounded-t-3xl overflow-hidden">
             {user.banner_url ? (
               <img src={user.banner_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-rs-red/30 to-rs-maroon" />
+              <div className="w-full h-full bg-gradient-to-br from-rs-red/30 to-transparent" />
             )}
           </div>
-
           <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full bg-black/50 hover:bg-black/70">
             <X size={18} />
           </button>
-
           <div className="absolute -bottom-10 left-5">
-            <img
-              src={user.profile_image_url || `https://ui-avatars.com/api/?name=${user.name}&background=AE0822&color=fff`}
-              alt=""
-              className="w-20 h-20 rounded-full border-4 border-[#12121a]"
-            />
+            <img src={user.profile_image_url || `https://ui-avatars.com/api/?name=${user.name}&background=AE0822&color=fff`} alt="" className="w-20 h-20 rounded-full border-4 border-[#0a0a0f]" />
           </div>
-
           {user.rank && (
             <div className={`absolute -bottom-3 left-20 px-3 py-1 rounded-full text-sm font-bold ${
               user.rank === 1 ? 'bg-yellow-500 text-yellow-900' :
               user.rank === 2 ? 'bg-gray-400 text-gray-900' :
               user.rank === 3 ? 'bg-amber-600 text-amber-100' :
               'bg-rs-red text-white'
-            }`}>
-              Rank #{user.rank}
-            </div>
+            }`}>Rank #{user.rank}</div>
           )}
         </div>
 
-        {/* Content */}
         <div className="p-5 pt-14">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-white">{user.name}</h2>
-              <a
-                href={`https://twitter.com/${user.username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-rs-raspberry text-sm font-mono hover:text-rs-red"
-              >
+              <a href={`https://twitter.com/${user.username}`} target="_blank" rel="noopener noreferrer" className="text-rs-raspberry text-sm font-mono hover:text-rs-red">
                 @{user.username}
               </a>
             </div>
-            <a
-              href={`https://twitter.com/${user.username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-glass px-4 py-2 text-sm flex items-center gap-2"
-            >
-              <ExternalLink size={14} />
-              Profile
+            <a href={`https://twitter.com/${user.username}`} target="_blank" rel="noopener noreferrer" className="glass-panel px-4 py-2 text-sm flex items-center gap-2 rounded-xl hover:bg-white/5">
+              <ExternalLink size={14} /> Profile
             </a>
           </div>
 
-          {user.description && (
-            <p className="text-white/60 text-sm mb-5">{user.description}</p>
-          )}
+          {user.description && <p className="text-white/60 text-sm mb-5">{user.description}</p>}
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <StatBox icon={<MessageCircle size={16} />} value={user.tweet_count} label="Tweets" color="text-blue-400" />
-            <StatBox icon={<Heart size={16} />} value={formatNumber(user.total_likes)} label="Likes" color="text-pink-400" />
-            <StatBox icon={<Repeat2 size={16} />} value={formatNumber(user.total_retweets)} label="Retweets" color="text-green-400" />
-            <StatBox icon={<Eye size={16} />} value={formatNumber(user.total_views)} label="Views" color="text-purple-400" />
+            <div className="glass-panel rounded-xl p-3 text-center">
+              <MessageCircle size={16} className="text-blue-400 mx-auto mb-1" />
+              <div className="text-lg font-bold text-white font-mono">{user.tweet_count}</div>
+              <div className="text-white/40 text-[10px]">Tweets</div>
+            </div>
+            <div className="glass-panel rounded-xl p-3 text-center">
+              <Heart size={16} className="text-pink-400 mx-auto mb-1" />
+              <div className="text-lg font-bold text-white font-mono">{fmt(user.total_likes)}</div>
+              <div className="text-white/40 text-[10px]">Likes</div>
+            </div>
+            <div className="glass-panel rounded-xl p-3 text-center">
+              <Repeat2 size={16} className="text-green-400 mx-auto mb-1" />
+              <div className="text-lg font-bold text-white font-mono">{fmt(user.total_retweets)}</div>
+              <div className="text-white/40 text-[10px]">Retweets</div>
+            </div>
+            <div className="glass-panel rounded-xl p-3 text-center">
+              <Eye size={16} className="text-purple-400 mx-auto mb-1" />
+              <div className="text-lg font-bold text-white font-mono">{fmt(user.total_views)}</div>
+              <div className="text-white/40 text-[10px]">Views</div>
+            </div>
           </div>
 
           {user.followers_count > 0 && (
             <div className="flex items-center gap-2 text-white/40 text-sm mb-5">
-              <Users size={14} />
-              {formatNumber(user.followers_count)} followers
+              <Users size={14} /> {fmt(user.followers_count)} followers
             </div>
           )}
 
           {/* Best Tweet */}
-          {bestTweet && (
+          {best && (
             <div className="border-t border-white/10 pt-5">
-              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                🔥 Best Tweet
-              </h3>
-              <div className="glass-panel rounded-xl p-4">
-                <p className="text-white/80 text-sm mb-3 whitespace-pre-wrap">{bestTweet.text}</p>
-                
-                <div className="flex items-center gap-4 text-xs font-mono">
-                  <span className="text-pink-400">❤️ {formatNumber(bestTweet.likes_count)}</span>
-                  <span className="text-green-400">🔁 {formatNumber(bestTweet.retweets_count)}</span>
-                  <span className="text-purple-400">👁️ {formatNumber(bestTweet.views_count)}</span>
-                  <span className="text-blue-400">💬 {formatNumber(bestTweet.replies_count)}</span>
-                </div>
-
-                {bestTweet.created_at && (
-                  <div className="mt-3 pt-3 border-t border-white/5 text-white/30 text-xs flex items-center gap-1">
-                    <Calendar size={10} />
-                    {formatDate(bestTweet.created_at)}
+              <h3 className="text-white font-semibold mb-3">🔥 Best Tweet</h3>
+              <a 
+                href={best.url || `https://twitter.com/${user.username}/status/${best.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block glass-panel rounded-xl p-4 hover:bg-white/5 transition-colors"
+              >
+                <p className="text-white/80 text-sm mb-3 whitespace-pre-wrap">{best.text}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-4 text-xs font-mono">
+                    <span className="text-pink-400">❤️ {fmt(best.likes_count)}</span>
+                    <span className="text-green-400">🔁 {fmt(best.retweets_count)}</span>
+                    <span className="text-purple-400">👁️ {fmt(best.views_count)}</span>
+                    <span className="text-blue-400">💬 {fmt(best.replies_count)}</span>
                   </div>
-                )}
-              </div>
+                  <ExternalLink size={12} className="text-white/30" />
+                </div>
+              </a>
             </div>
           )}
 
-          {/* Recent Tweets */}
+          {/* All Tweets */}
           {user.tweets?.length > 1 && (
             <div className="border-t border-white/10 pt-5 mt-5">
-              <h3 className="text-white font-semibold mb-3">
-                📝 All Tweets ({user.tweets.length})
-              </h3>
+              <h3 className="text-white font-semibold mb-3">📝 All Tweets ({user.tweets.length})</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {user.tweets.map((tweet, idx) => (
+                {user.tweets.map((t, i) => (
                   <a
-                    key={tweet.id || idx}
-                    href={tweet.url || `https://twitter.com/${user.username}/status/${tweet.id}`}
+                    key={t.id || i}
+                    href={t.url || `https://twitter.com/${user.username}/status/${t.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block glass-panel rounded-lg p-3 hover:bg-white/5"
+                    className="block glass-panel rounded-lg p-3 hover:bg-white/5 transition-colors"
                   >
-                    <p className="text-white/70 text-xs line-clamp-2 mb-2">{tweet.text}</p>
-                    <div className="flex gap-3 text-[10px] text-white/40 font-mono">
-                      <span>❤️ {formatNumber(tweet.likes_count)}</span>
-                      <span>🔁 {formatNumber(tweet.retweets_count)}</span>
-                      <span>👁️ {formatNumber(tweet.views_count)}</span>
-                      <span>💬 {formatNumber(tweet.replies_count)}</span>
+                    <p className="text-white/70 text-xs line-clamp-2 mb-2">{t.text}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-3 text-[10px] text-white/40 font-mono">
+                        <span>❤️ {fmt(t.likes_count)}</span>
+                        <span>🔁 {fmt(t.retweets_count)}</span>
+                        <span>👁️ {fmt(t.views_count)}</span>
+                      </div>
+                      <ExternalLink size={10} className="text-white/20" />
                     </div>
                   </a>
                 ))}
@@ -174,15 +158,5 @@ export default function UserModal({ user, onClose }) {
         </div>
       </motion.div>
     </motion.div>
-  );
-}
-
-function StatBox({ icon, value, label, color }) {
-  return (
-    <div className="glass-panel rounded-xl p-3 text-center">
-      <div className={`${color} mb-1 flex justify-center`}>{icon}</div>
-      <div className="text-lg font-bold text-white font-mono">{value}</div>
-      <div className="text-white/40 text-[10px]">{label}</div>
-    </div>
   );
 }
