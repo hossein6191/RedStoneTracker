@@ -7,7 +7,7 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#AE0822]/20 flex items-center justify-center">
             <img
-              src="/redstone-logo.png"
+              src="/redstone-logo.png.png"
               alt="RedStone"
               className="w-6 h-6 object-contain"
             />
@@ -25,7 +25,7 @@ export default function Header() {
           className="px-4 py-2 bg-gradient-to-r from-[#AE0822] to-[#E41939] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <img
-            src="/redstone-logo.png"
+            src="/redstone-logo.png.png"
             alt="RED"
             className="w-4 h-4 object-contain"
           />
