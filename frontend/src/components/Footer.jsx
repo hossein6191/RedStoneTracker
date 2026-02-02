@@ -1,4 +1,4 @@
-import { Heart, ExternalLink, Hexagon } from 'lucide-react';
+import { Heart, ExternalLink } from 'lucide-react';
 
 const LINKS = [
   { name: 'Website', url: 'https://redstone.finance' },
@@ -12,15 +12,15 @@ export default function Footer() {
   return (
     <footer className="border-t border-[#AE0822]/20 mt-16 bg-[#0a0408]/80">
       <div className="container mx-auto px-4 max-w-7xl py-10">
-        
+
         {/* Official Links */}
         <div className="flex flex-wrap justify-center gap-4 mb-8">
           {LINKS.map(link => (
-            <a 
+            <a
               key={link.name}
-              href={link.url} 
-              target="_blank" 
-              rel="noopener noreferrer" 
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-2 bg-white/5 hover:bg-[#AE0822]/20 rounded-xl text-white/70 hover:text-white text-sm flex items-center gap-2 transition-colors border border-white/10 hover:border-[#AE0822]/30"
             >
               {link.name}
@@ -32,7 +32,11 @@ export default function Footer() {
         {/* RedStone branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#AE0822]/10 rounded-2xl border border-[#AE0822]/30">
-            <Hexagon className="w-8 h-8 text-[#AE0822]" fill="#AE0822" />
+            <img
+              src="/redstone-logo.png"
+              alt="RedStone"
+              className="w-8 h-8 object-contain"
+            />
             <div className="text-left">
               <p className="text-white font-bold">RedStone</p>
               <p className="text-white/50 text-xs">Modular Oracle for DeFi</p>
@@ -46,10 +50,10 @@ export default function Footer() {
             <span>Made with</span>
             <Heart size={14} className="text-[#AE0822]" fill="#AE0822" />
             <span>by</span>
-            <a 
-              href="https://x.com/HossseinRezaei" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://x.com/HossseinRezaei"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#AE0822] hover:underline font-semibold"
             >
               Hellish
