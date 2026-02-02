@@ -45,24 +45,20 @@ export default function Footer() {
         </div>
 
         {/* Made by */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-sm">
-          <div className="flex items-center gap-2 text-white/50">
-            <span>Made with</span>
-            <Heart size={14} className="text-[#AE0822]" fill="#AE0822" />
-            <span>by</span>
-            <a
-              href="https://x.com/HossseinRezaei"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#AE0822] hover:underline font-semibold"
-            >
-              Hellish
-            </a>
-          </div>
-          <span className="text-white/20 hidden md:block">•</span>
-          <p className="text-white/30 text-xs">Weekly stats reset every Monday</p>
-        </div>
-      </div>
-    </footer>
+        <a 
+  href="https://x.com/HossseinRezaei"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-2 hover:opacity-90"
+>
+  <img
+    src="/hellish-logo.jpg.jpg"
+    alt="Hellish"
+    className="w-5 h-5 rounded-full object-contain"
+  />
+  <span className="text-[#AE0822] font-semibold">
+    Hellish
+  </span>
+</a>
   );
 }
