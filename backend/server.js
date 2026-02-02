@@ -419,12 +419,12 @@ async function autoRefresh() {
   }
 
   const queries = [
-    '@redstone_defi -is:retweet',
-    '"RedStone Oracle" -is:retweet',
-    'redstone oracle crypto -minecraft -is:retweet',
-    '#RedStone defi -is:retweet'
-    '(@redstone_defi OR RedStone) -is:retweet'
-  ];
+  "@redstone_defi -is:retweet",
+  '"RedStone Oracle" -is:retweet',
+  "redstone oracle crypto -minecraft -is:retweet",
+  "#RedStone defi -is:retweet",
+  "(@redstone_defi OR RedStone) -is:retweet"
+];
 
   let total = 0;
 
