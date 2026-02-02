@@ -33,7 +33,7 @@ export default function Footer() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#AE0822]/10 rounded-2xl border border-[#AE0822]/30">
             <img
-              src="/hellish-logo.jpg.jpg"
+              src="/redstone-logo.png.png"
               alt="RedStone"
               className="w-8 h-8 object-contain"
             />
