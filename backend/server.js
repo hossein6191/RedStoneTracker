@@ -1,9 +1,11 @@
 /**
- * RedStone Tweet Tracker v7.1 (twitterapi.io)
- * - Uses twitterapi.io (X-API-Key) instead of X official credits
- * - Weekly stats (Monday to Sunday)
+ * RedStone Tweet Tracker v7.2 (twitterapi.io)
+ * - twitterapi.io (X-API-Key)
+ * - Weekly stats (Monday 00:00 UTC to Sunday)
  * - Auto-refresh every 30 minutes
  * - Live RED price
+ * - Fix weekly filter by storing created_at as ISO (toISOString)
+ * - Optional one-time clear: CLEAR_TWEETS_ON_START=true
  */
 
 if (process.env.NODE_ENV !== 'production') {
@@ -74,34 +76,65 @@ if (!resetRow) {
 
 console.log('✅ Database ready');
 
+// Optional one-time clear (useful after fixing created_at format)
+if ((process.env.CLEAR_TWEETS_ON_START || '').toLowerCase() === 'true') {
+  db.exec('DELETE FROM tweets');
+  db.prepare('UPDATE weekly_reset SET last_reset = ? WHERE id = 1').run(new Date().toISOString());
+  console.log('🧹 CLEAR_TWEETS_ON_START=true -> tweets cleared (set it to false/remove after this run)');
+}
+
 // =====================
 // twitterapi.io Config
 // =====================
 const TWITTERAPI_KEY = process.env.TWITTERAPI_IO_KEY;
 
 // Blacklist
-const BLACKLIST = ['murder', 'killed', 'death', 'minecraft', 'gaming', 'game', 'redstone dust', 'redstone torch'];
+const BLACKLIST = [
+  'murder', 'killed', 'death',
+  'minecraft', 'gaming', 'game',
+  'redstone dust', 'redstone torch'
+];
 
 function isRelevant(text) {
   const lower = (text || '').toLowerCase();
   return !BLACKLIST.some(w => lower.includes(w));
 }
 
-// Get Monday of current week
-function getWeekStart() {
+function hasRedstoneSignal(text) {
+  const s = (text || '').toLowerCase();
+  return (
+    s.includes('redstone') ||
+    s.includes('@redstone_defi') ||
+    s.includes('#redstone')
+  );
+}
+
+// Force created_at to ISO so weekly filter works correctly
+function toISODate(input) {
+  if (!input) return null;
+
+  // already ISO
+  if (typeof input === 'string' && input.includes('T') && input.endsWith('Z')) return input;
+
+  const d = new Date(input);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+// Monday 00:00 UTC start
+function getWeekStartISO() {
   const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  monday.setHours(0, 0, 0, 0);
+  const day = now.getUTCDay(); // 0 Sun, 1 Mon...
+  const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1); // move back to Monday
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff, 0, 0, 0, 0));
   return monday.toISOString();
 }
 
-// Weekly reset
+// Weekly reset (clears DB when new week starts)
 function checkWeeklyReset() {
   const lastReset = db.prepare('SELECT last_reset FROM weekly_reset WHERE id = 1').get();
   const lastResetDate = new Date(lastReset?.last_reset || 0);
-  const currentWeekStart = new Date(getWeekStart());
+  const currentWeekStart = new Date(getWeekStartISO());
 
   if (lastResetDate < currentWeekStart) {
     console.log('🔄 New week! Resetting data...');
@@ -148,7 +181,7 @@ async function fetchTwitterAdvancedSearch(query, cursor = "") {
   }
 }
 
-// Get user info by username (twitterapi.io)
+// user info (twitterapi.io)
 async function fetchUserInfo(username) {
   if (!TWITTERAPI_KEY) return null;
 
@@ -158,7 +191,12 @@ async function fetchUserInfo(username) {
       { headers: { "X-API-Key": TWITTERAPI_KEY } }
     );
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.text();
+      console.log(`❌ twitterapi.io user/info Error ${res.status}: ${err}`);
+      return null;
+    }
+
     const data = await res.json();
     const u = data?.data || data?.user || data;
 
@@ -178,7 +216,7 @@ async function fetchUserInfo(username) {
   }
 }
 
-// Get user tweets by username (twitterapi.io)
+// user tweets (twitterapi.io)
 async function fetchUserTweets(username, cursor = "") {
   if (!TWITTERAPI_KEY) return null;
 
@@ -193,14 +231,19 @@ async function fetchUserTweets(username, cursor = "") {
       { headers: { "X-API-Key": TWITTERAPI_KEY } }
     );
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.text();
+      console.log(`❌ twitterapi.io user/tweets Error ${res.status}: ${err}`);
+      return null;
+    }
+
     return await res.json();
   } catch (e) {
     return null;
   }
 }
 
-// Parse twitterapi.io advanced_search response
+// Parse advanced_search response -> unified {tweets, users}
 function parseSearchResponse(data) {
   if (!data?.tweets) return { tweets: [], users: [], next_cursor: "", has_next_page: false };
 
@@ -213,9 +256,9 @@ function parseSearchResponse(data) {
     if (a?.id && !usersMap.has(a.id)) {
       usersMap.set(a.id, {
         id: a.id,
-        username: a.userName,
-        name: a.name,
-        profile_image_url: a.profilePicture,
+        username: a.userName || "",
+        name: a.name || "",
+        profile_image_url: a.profilePicture || "",
         followers_count: a.followers || 0,
         description: a.description || "",
         verified: a.isBlueVerified ? 1 : 0
@@ -226,7 +269,7 @@ function parseSearchResponse(data) {
       id: t.id,
       user_id: a?.id || "",
       text: t.text || "",
-      created_at: t.createdAt || "",
+      created_at: toISODate(t.createdAt) || "",
       likes_count: t.likeCount || 0,
       retweets_count: t.retweetCount || 0,
       replies_count: t.replyCount || 0,
@@ -244,12 +287,13 @@ function parseSearchResponse(data) {
   };
 }
 
-// Parse twitterapi.io user/tweets response (best-effort)
+// Parse user/tweets response best-effort -> unified
 function parseUserTweetsResponse(data, fallbackUserId = "") {
   const tweets = [];
   const users = [];
 
   const list = data?.tweets || data?.data || [];
+
   for (const t of list) {
     const a = t.author;
 
@@ -269,7 +313,7 @@ function parseUserTweetsResponse(data, fallbackUserId = "") {
       id: t.id,
       user_id: a?.id || fallbackUserId || "",
       text: t.text || "",
-      created_at: t.createdAt || "",
+      created_at: toISODate(t.createdAt) || "",
       likes_count: t.likeCount || 0,
       retweets_count: t.retweetCount || 0,
       replies_count: t.replyCount || 0,
@@ -305,7 +349,17 @@ function saveToDB(tweets, users) {
 
   for (const u of users || []) {
     if (!u?.id || !u?.username) continue;
-    try { iu.run(u.id, u.username, u.name || "", u.profile_image_url || "", u.followers_count || 0, u.description || "", u.verified || 0); } catch(e) {}
+    try {
+      iu.run(
+        u.id,
+        u.username,
+        u.name || "",
+        u.profile_image_url || "",
+        u.followers_count || 0,
+        u.description || "",
+        u.verified || 0
+      );
+    } catch (e) {}
   }
 
   for (const t of tweets || []) {
@@ -326,7 +380,7 @@ function saveToDB(tweets, users) {
         t.is_reply ? 1 : 0
       );
       count++;
-    } catch(e) {}
+    } catch (e) {}
   }
 
   return count;
@@ -344,7 +398,7 @@ async function fetchRedPrice() {
       const data = await res.json();
       redPrice = {
         usd: data['redstone-oracles']?.usd || 0,
-        change_24h: data['redstone-oracles']?.usd_24hr_change || data['redstone-oracles']?.usd_24h_change || 0,
+        change_24h: data['redstone-oracles']?.usd_24h_change || 0,
         updated_at: new Date().toISOString()
       };
       console.log(`💰 RED: $${Number(redPrice.usd).toFixed(4)}`);
@@ -381,7 +435,10 @@ async function autoRefresh() {
       if (!data) break;
 
       const parsed = parseSearchResponse(data);
-      total += saveToDB(parsed.tweets, parsed.users);
+
+      // keep only relevant RedStone signal
+      const filteredTweets = parsed.tweets.filter(t => hasRedstoneSignal(t.text) && isRelevant(t.text));
+      total += saveToDB(filteredTweets, parsed.users);
 
       if (!parsed.has_next_page) break;
       cursor = parsed.next_cursor;
@@ -405,7 +462,7 @@ fetchRedPrice();
 // =====================
 app.get('/api/health', (req, res) => {
   const stats = db.prepare('SELECT COUNT(*) as tweets FROM tweets WHERE is_reply = 0').get();
-  res.json({ status: 'ok', version: '7.1', tweets: stats.tweets, has_token: !!TWITTERAPI_KEY });
+  res.json({ status: 'ok', version: '7.2', tweets: stats.tweets, has_token: !!TWITTERAPI_KEY });
 });
 
 app.get('/api/price', (req, res) => {
@@ -414,7 +471,7 @@ app.get('/api/price', (req, res) => {
 
 app.get('/api/stats', (req, res) => {
   try {
-    const weekStart = getWeekStart();
+    const weekStart = getWeekStartISO();
 
     const stats = db.prepare(`
       SELECT 
@@ -445,7 +502,7 @@ app.get('/api/stats', (req, res) => {
 
 app.get('/api/top3', (req, res) => {
   try {
-    const weekStart = getWeekStart();
+    const weekStart = getWeekStartISO();
 
     const top3 = db.prepare(`
       SELECT u.id, u.username, u.name, u.profile_image_url, u.verified,
@@ -467,7 +524,7 @@ app.get('/api/top3', (req, res) => {
 
 app.get('/api/leaderboard', (req, res) => {
   try {
-    const weekStart = getWeekStart();
+    const weekStart = getWeekStartISO();
 
     const list = db.prepare(`
       SELECT u.id, u.username, u.name, u.profile_image_url, u.verified,
@@ -492,7 +549,7 @@ app.get('/api/search', async (req, res) => {
     const q = (req.query.q || '').trim();
     if (q.length < 2) return res.json({ success: true, data: [] });
 
-    const weekStart = getWeekStart();
+    const weekStart = getWeekStartISO();
     const searchTerm = `%${q.toLowerCase()}%`;
 
     // Search in DB first
@@ -505,33 +562,31 @@ app.get('/api/search', async (req, res) => {
       GROUP BY u.id ORDER BY total_views DESC LIMIT 20
     `).all(weekStart, weekStart, searchTerm, searchTerm);
 
-    // If not found, fetch user info + tweets from twitterapi.io
+    // If not found, fetch user + tweets from twitterapi.io
     if (results.length === 0 && TWITTERAPI_KEY) {
       const user = await fetchUserInfo(q);
       if (user?.id) {
-        // Save user
         db.prepare(`
           INSERT OR REPLACE INTO users
           (id,username,name,profile_image_url,followers_count,description,verified,updated_at)
           VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
         `).run(user.id, user.username, user.name, user.profile_image_url, user.followers_count, user.description, user.verified);
 
-        // Fetch their tweets (few pages)
+        // fetch few pages of user tweets & store only redstone-signal tweets
         let cursor = "";
         for (let page = 0; page < 2; page++) {
           const ut = await fetchUserTweets(user.username, cursor);
           if (!ut) break;
 
           const parsed = parseUserTweetsResponse(ut, user.id);
-          const onlyRedstone = parsed.tweets.filter(t => (t.text || "").toLowerCase().includes("redstone") && isRelevant(t.text));
-          totalSaved = saveToDB(onlyRedstone, parsed.users.length ? parsed.users : [user]);
+          const onlyRedstone = parsed.tweets.filter(t => hasRedstoneSignal(t.text) && isRelevant(t.text));
+          saveToDB(onlyRedstone, parsed.users.length ? parsed.users : [user]);
 
           if (!parsed.has_next_page) break;
           cursor = parsed.next_cursor;
           await new Promise(r => setTimeout(r, 800));
         }
 
-        // Re-query from DB
         results = db.prepare(`
           SELECT u.id, u.username, u.name, u.profile_image_url, u.verified,
             COUNT(CASE WHEN t.is_reply = 0 THEN 1 END) as tweet_count,
@@ -543,7 +598,7 @@ app.get('/api/search', async (req, res) => {
       }
     }
 
-    // ranks
+    // ranks (weekly)
     const ranked = db.prepare(`
       SELECT u.id FROM users u JOIN tweets t ON u.id = t.user_id
       WHERE t.is_reply = 0 AND t.created_at >= ?
@@ -565,7 +620,7 @@ app.get('/api/search', async (req, res) => {
 app.get('/api/user/:username', async (req, res) => {
   try {
     const username = (req.params.username || '').toLowerCase();
-    const weekStart = getWeekStart();
+    const weekStart = getWeekStartISO();
 
     let user = db.prepare(`
       SELECT u.*,
@@ -577,7 +632,6 @@ app.get('/api/user/:username', async (req, res) => {
       WHERE LOWER(u.username) = ? GROUP BY u.id
     `).get(weekStart, weekStart, weekStart, weekStart, username);
 
-    // If missing, fetch and store from twitterapi.io
     if (!user && TWITTERAPI_KEY) {
       const u = await fetchUserInfo(username);
       if (u?.id) {
@@ -587,35 +641,29 @@ app.get('/api/user/:username', async (req, res) => {
           VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
         `).run(u.id, u.username, u.name, u.profile_image_url, u.followers_count, u.description, u.verified);
 
-        // fetch few tweets
         let cursor = "";
         for (let page = 0; page < 2; page++) {
           const ut = await fetchUserTweets(u.username, cursor);
           if (!ut) break;
 
           const parsed = parseUserTweetsResponse(ut, u.id);
-const onlyRedstone = parsed.tweets.filter(
-  t => (t.text || "").toLowerCase().includes("redstone") && isRelevant(t.text)
-);
-
-saveToDB(onlyRedstone, parsed.users.length ? parsed.users : [u]);
-
+          const onlyRedstone = parsed.tweets.filter(t => hasRedstoneSignal(t.text) && isRelevant(t.text));
+          saveToDB(onlyRedstone, parsed.users.length ? parsed.users : [u]);
 
           if (!parsed.has_next_page) break;
           cursor = parsed.next_cursor;
           await new Promise(r => setTimeout(r, 800));
         }
 
-        // re-query
         user = db.prepare(`
           SELECT u.*,
-            COUNT(CASE WHEN t.is_reply = 0 THEN 1 END) as tweet_count,
-            COALESCE(SUM(CASE WHEN t.is_reply = 0 THEN t.likes_count ELSE 0 END), 0) as total_likes,
-            COALESCE(SUM(CASE WHEN t.is_reply = 0 THEN t.retweets_count ELSE 0 END), 0) as total_retweets,
-            COALESCE(SUM(CASE WHEN t.is_reply = 0 THEN t.views_count ELSE 0 END), 0) as total_views
+            COUNT(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN 1 END) as tweet_count,
+            COALESCE(SUM(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN t.likes_count ELSE 0 END), 0) as total_likes,
+            COALESCE(SUM(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN t.retweets_count ELSE 0 END), 0) as total_retweets,
+            COALESCE(SUM(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN t.views_count ELSE 0 END), 0) as total_views
           FROM users u LEFT JOIN tweets t ON u.id = t.user_id
           WHERE LOWER(u.username) = ? GROUP BY u.id
-        `).get(username);
+        `).get(weekStart, weekStart, weekStart, weekStart, username);
       }
     }
 
@@ -634,7 +682,7 @@ saveToDB(onlyRedstone, parsed.users.length ? parsed.users : [u]);
         WHERE t.is_reply = 0 AND t.created_at >= ?
         GROUP BY u.id ORDER BY (SUM(t.likes_count) * 3 + SUM(t.views_count) * 0.01) DESC
       `).all(weekStart);
-      ranked.forEach((u, i) => { if (u.id === user.id) rank = i + 1; });
+      ranked.forEach((row, i) => { if (row.id === user.id) rank = i + 1; });
     }
 
     res.json({
@@ -652,6 +700,6 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🔴 RedStone Tracker v7.1 on port ${PORT}`);
+  console.log(`\n🔴 RedStone Tracker v7.2 on port ${PORT}`);
   console.log(`   twitterapi.io: ${TWITTERAPI_KEY ? '✅ Configured' : '❌ Missing'}\n`);
 });
