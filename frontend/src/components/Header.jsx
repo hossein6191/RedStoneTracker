@@ -6,7 +6,11 @@ export default function Header() {
       <div className="container mx-auto px-4 max-w-7xl h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#AE0822]/20 flex items-center justify-center">
-            <Hexagon className="w-6 h-6 text-[#AE0822]" fill="#AE0822" />
+            <img
+              src="/redstone-logo.png"
+              alt="RedStone"
+              className="w-6 h-6 object-contain"
+            />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white">RedStone Tracker</h1>
@@ -20,7 +24,11 @@ export default function Header() {
           rel="noopener noreferrer"
           className="px-4 py-2 bg-gradient-to-r from-[#AE0822] to-[#E41939] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2"
         >
-          <Hexagon className="w-4 h-4" />
+          <img
+            src="/redstone-logo.png"
+            alt="RED"
+            className="w-4 h-4 object-contain"
+          />
           Stake RED
         </a>
       </div>
