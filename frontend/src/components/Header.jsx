@@ -1,5 +1,3 @@
-import { Hexagon } from 'lucide-react';
-
 export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-[#0a0408]/80 backdrop-blur-xl border-b border-[#AE0822]/20">
@@ -10,15 +8,19 @@ export default function Header() {
               src="/redstone-logo.png.png"
               alt="RedStone"
               className="w-6 h-6 object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
             />
           </div>
+
           <div>
             <h1 className="text-lg font-bold text-white">RedStone Tracker</h1>
             <p className="text-[10px] text-white/40">Weekly Community Stats</p>
           </div>
         </div>
 
-        <a 
+        <a
           href="https://app.eigenlayer.xyz/token/0xc43c6bfeda065fe2c4c11765bf838789bd0bb5de"
           target="_blank"
           rel="noopener noreferrer"
@@ -27,7 +29,10 @@ export default function Header() {
           <img
             src="/redstone-logo.png.png"
             alt="RED"
-            className="w-4 h-4 object-contain"
+            className="w-4 h-4 object-contain rounded-full bg-white/10 p-0.5"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
           />
           Stake RED
         </a>
