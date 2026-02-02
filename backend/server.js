@@ -89,25 +89,24 @@ if ((process.env.CLEAR_TWEETS_ON_START || '').toLowerCase() === 'true') {
 const TWITTERAPI_KEY = process.env.TWITTERAPI_IO_KEY;
 
 // Blacklist
-const BLACKLIST = [
-  'murder', 'killed', 'death',
-  'minecraft', 'gaming', 'game',
-  'redstone dust', 'redstone torch'
-];
-
+const BLACKLIST = ['murder','killed','death','minecraft','redstone dust','redstone torch'];
 function isRelevant(text) {
   const lower = (text || '').toLowerCase();
   return !BLACKLIST.some(w => lower.includes(w));
 }
 
 function hasRedstoneSignal(text) {
-  const s = (text || '').toLowerCase();
+  const s = (text || "").toLowerCase();
   return (
-    s.includes('redstone') ||
-    s.includes('@redstone_defi') ||
-    s.includes('#redstone')
+    s.includes("redstone") ||
+    s.includes("red stone") ||
+    s.includes("@redstone_defi") ||
+    s.includes("#redstone") ||
+    s.includes("redstone bolt") ||
+    s.includes("redstone oracle")
   );
 }
+
 
 // Force created_at to ISO so weekly filter works correctly
 function toISODate(input) {
@@ -431,7 +430,7 @@ async function autoRefresh() {
   for (const q of queries) {
     let cursor = "";
 
-    for (let page = 0; page < 3; page++) { // 3 pages (~60 tweets)
+    for (let page = 0; page < 15; page++) { // 3 pages (~60 tweets)
       const data = await fetchTwitterAdvancedSearch(q, cursor);
       if (!data) break;
 
@@ -585,7 +584,7 @@ app.get('/api/search', async (req, res) => {
 
           if (!parsed.has_next_page) break;
           cursor = parsed.next_cursor;
-          await new Promise(r => setTimeout(r, 800));
+          await new Promise(r => setTimeout(r, 1200));
         }
 
         results = db.prepare(`
