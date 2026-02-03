@@ -2,7 +2,7 @@
  * RedStone Tweet Tracker v7.2 (twitterapi.io)
  * - twitterapi.io (X-API-Key)
  * - Weekly stats (Monday 00:00 UTC to Sunday)
- * - Auto-refresh every 30 minutes
+ * - Auto-refresh every 6 hours
  * - Live RED price
  * - Fix weekly filter by storing created_at as ISO (toISOString)
  * - Optional one-time clear: CLEAR_TWEETS_ON_START=true
@@ -453,7 +453,7 @@ async function autoRefresh() {
 
 // Start refresh cycles
 setTimeout(autoRefresh, 5000);
-setInterval(autoRefresh, 30 * 60 * 1000); // Every 30 min
+setInterval(autoRefresh, 6 * 60 * 60 * 1000); // Every 6 hours
 setInterval(fetchRedPrice, 30000); // Price every 30 sec
 fetchRedPrice();
 
