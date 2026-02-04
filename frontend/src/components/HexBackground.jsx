@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
-export default function HexBackground() {
+function FloatingLogos() {
   const [logos, setLogos] = useState([]);
   const [pops, setPops] = useState([]);
 
@@ -49,10 +50,7 @@ export default function HexBackground() {
     return () => clearInterval(interval);
   }, [createLogo]);
 
-  const handlePop = (e, logo) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handlePop = (logo) => {
     const newPop = {
       id: Date.now(),
       x: logo.x,
@@ -68,64 +66,79 @@ export default function HexBackground() {
 
   return (
     <>
-      {/* Background layer - behind everything */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#0a0408] to-[#0f0507]" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#AE0822] opacity-10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-[#AE0822] opacity-5 blur-[100px] rounded-full" />
-      </div>
-
-      {/* Floating logos - clickable, above background but below content */}
+      {/* Floating logos */}
       {logos.map(logo => (
-        <div
+        <button
           key={logo.id}
-          onClick={(e) => handlePop(e, logo)}
-          className="fixed cursor-pointer hover:scale-150 transition-transform duration-200"
+          onClick={() => handlePop(logo)}
           style={{
+            position: 'fixed',
             left: `${logo.x}%`,
             top: `${logo.y}%`,
             width: logo.size,
             height: logo.size,
             opacity: logo.opacity,
             transform: `rotate(${logo.rotation}deg)`,
-            zIndex: 1,
-            pointerEvents: 'auto'
+            zIndex: 99999,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
           }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1.5)`}
+          onMouseLeave={(e) => e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1)`}
         >
           <img
             src="/redstone-logo.png.png"
             alt=""
-            className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(174,8,34,0.5)]"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 0 10px rgba(174,8,34,0.5))',
+              pointerEvents: 'none'
+            }}
             draggable={false}
-            style={{ pointerEvents: 'none' }}
           />
-        </div>
+        </button>
       ))}
 
-      {/* Pop effects - on top */}
+      {/* Pop effects */}
       {pops.map(pop => (
         <div
           key={pop.id}
-          className="fixed pointer-events-none"
           style={{
+            position: 'fixed',
             left: `${pop.x}%`,
             top: `${pop.y}%`,
-            zIndex: 9999
+            zIndex: 999999,
+            pointerEvents: 'none'
           }}
         >
+          {/* Particles */}
           {[...Array(8)].map((_, i) => (
             <span
               key={i}
-              className="absolute w-3 h-3 bg-[#AE0822] rounded-full"
               style={{
+                position: 'absolute',
+                width: 12,
+                height: 12,
+                backgroundColor: '#AE0822',
+                borderRadius: '50%',
                 animation: `particle-${i} 0.8s ease-out forwards`,
               }}
             />
           ))}
           
+          {/* Gminers text */}
           <div 
-            className="absolute left-1/2 text-2xl font-bold whitespace-nowrap"
             style={{
+              position: 'absolute',
+              left: '50%',
+              fontSize: 24,
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
               color: '#AE0822',
               textShadow: '0 0 20px #AE0822, 0 0 40px #AE0822',
               animation: 'gminers-pop 1.2s ease-out forwards',
@@ -153,6 +166,28 @@ export default function HexBackground() {
           100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(0.8); }
         }
       `}</style>
+    </>
+  );
+}
+
+export default function HexBackground() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <>
+      {/* Background gradient */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#0a0408] to-[#0f0507]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#AE0822] opacity-10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-[#AE0822] opacity-5 blur-[100px] rounded-full" />
+      </div>
+
+      {/* Floating logos - rendered via portal to body */}
+      {mounted && createPortal(<FloatingLogos />, document.body)}
     </>
   );
 }
