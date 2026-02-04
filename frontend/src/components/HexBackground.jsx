@@ -4,7 +4,6 @@ export default function HexBackground() {
   const [logos, setLogos] = useState([]);
   const [pops, setPops] = useState([]);
 
-  // Create floating logo
   const createLogo = useCallback(() => {
     const id = Date.now() + Math.random();
     const fromTop = Math.random() > 0.5;
@@ -22,7 +21,6 @@ export default function HexBackground() {
     };
   }, []);
 
-  // Initialize logos
   useEffect(() => {
     const initial = Array.from({ length: 12 }, () => ({
       ...createLogo(),
@@ -31,7 +29,6 @@ export default function HexBackground() {
     setLogos(initial);
   }, [createLogo]);
 
-  // Animation loop
   useEffect(() => {
     const interval = setInterval(() => {
       setLogos(prev => {
@@ -52,40 +49,38 @@ export default function HexBackground() {
     return () => clearInterval(interval);
   }, [createLogo]);
 
-  // Handle logo click - POP!
-  const handlePop = (logo) => {
-    // Add pop effect at logo position
+  const handlePop = (e, logo) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     const newPop = {
       id: Date.now(),
       x: logo.x,
       y: logo.y
     };
     setPops(prev => [...prev, newPop]);
-
-    // Remove clicked logo
     setLogos(prev => prev.filter(l => l.id !== logo.id));
 
-    // Remove pop after 1.5 seconds
     setTimeout(() => {
       setPops(prev => prev.filter(p => p.id !== newPop.id));
     }, 1500);
   };
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden">
-      {/* Base gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#0a0408] to-[#0f0507]" />
-      
-      {/* Subtle red glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#AE0822] opacity-10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-[#AE0822] opacity-5 blur-[100px] rounded-full" />
-      
-      {/* Floating logos */}
+    <>
+      {/* Background layer - behind everything */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#0a0408] to-[#0f0507]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#AE0822] opacity-10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-[#AE0822] opacity-5 blur-[100px] rounded-full" />
+      </div>
+
+      {/* Floating logos - clickable, above background but below content */}
       {logos.map(logo => (
         <div
           key={logo.id}
-          onClick={() => handlePop(logo)}
-          className="absolute cursor-pointer hover:scale-150 transition-transform duration-200"
+          onClick={(e) => handlePop(e, logo)}
+          className="fixed cursor-pointer hover:scale-150 transition-transform duration-200"
           style={{
             left: `${logo.x}%`,
             top: `${logo.y}%`,
@@ -93,7 +88,8 @@ export default function HexBackground() {
             height: logo.size,
             opacity: logo.opacity,
             transform: `rotate(${logo.rotation}deg)`,
-            zIndex: 5
+            zIndex: 1,
+            pointerEvents: 'auto'
           }}
         >
           <img
@@ -106,17 +102,17 @@ export default function HexBackground() {
         </div>
       ))}
 
-      {/* Pop effects with Gminers text */}
+      {/* Pop effects - on top */}
       {pops.map(pop => (
         <div
           key={pop.id}
-          className="absolute z-50"
+          className="fixed pointer-events-none"
           style={{
             left: `${pop.x}%`,
             top: `${pop.y}%`,
+            zIndex: 9999
           }}
         >
-          {/* Particles */}
           {[...Array(8)].map((_, i) => (
             <span
               key={i}
@@ -127,9 +123,8 @@ export default function HexBackground() {
             />
           ))}
           
-          {/* Gminers text */}
           <div 
-            className="absolute left-1/2 text-2xl font-bold whitespace-nowrap z-50"
+            className="absolute left-1/2 text-2xl font-bold whitespace-nowrap"
             style={{
               color: '#AE0822',
               textShadow: '0 0 20px #AE0822, 0 0 40px #AE0822',
@@ -141,7 +136,6 @@ export default function HexBackground() {
         </div>
       ))}
 
-      {/* Animations */}
       <style>{`
         @keyframes particle-0 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(40px, -40px); } }
         @keyframes particle-1 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(50px, 0); } }
@@ -153,23 +147,12 @@ export default function HexBackground() {
         @keyframes particle-7 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(0, -50px); } }
         
         @keyframes gminers-pop {
-          0% { 
-            opacity: 0; 
-            transform: translateX(-50%) translateY(0) scale(0.3);
-          }
-          15% { 
-            opacity: 1; 
-            transform: translateX(-50%) translateY(-20px) scale(1.3);
-          }
-          30% {
-            transform: translateX(-50%) translateY(-25px) scale(1);
-          }
-          100% { 
-            opacity: 0; 
-            transform: translateX(-50%) translateY(-60px) scale(0.8);
-          }
+          0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.3); }
+          15% { opacity: 1; transform: translateX(-50%) translateY(-20px) scale(1.3); }
+          30% { transform: translateX(-50%) translateY(-25px) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(0.8); }
         }
       `}</style>
-    </div>
+    </>
   );
 }
