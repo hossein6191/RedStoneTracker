@@ -40,6 +40,7 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     name TEXT,
     profile_image_url TEXT,
+    banner_url TEXT,
     followers_count INTEGER DEFAULT 0,
     description TEXT,
     verified INTEGER DEFAULT 0,
@@ -356,10 +357,10 @@ function parseUserTweetsResponse(data, fallbackUserId = "") {
 // Save to DB
 function saveToDB(tweets, users) {
   const iu = db.prepare(`
-    INSERT OR REPLACE INTO users
-    (id,username,name,profile_image_url,followers_count,description,verified,updated_at)
-    VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-  `);
+  INSERT OR REPLACE INTO users
+  (id,username,name,profile_image_url,banner_url,followers_count,description,verified,updated_at)
+  VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+`);
 
   const it = db.prepare(`
     INSERT OR REPLACE INTO tweets
@@ -373,14 +374,15 @@ function saveToDB(tweets, users) {
     if (!u?.id || !u?.username) continue;
     try {
       iu.run(
-        u.id,
-        u.username,
-        u.name || "",
-        u.profile_image_url || "",
-        u.followers_count || 0,
-        u.description || "",
-        u.verified || 0
-      );
+  u.id,
+  u.username,
+  u.name || "",
+  u.profile_image_url || "",
+  u.banner_url || "",
+  u.followers_count || 0,
+  u.description || "",
+  u.verified || 0
+);
     } catch (e) {}
   }
 
