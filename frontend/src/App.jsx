@@ -36,7 +36,6 @@ export default function App() {
 
   useEffect(() => { 
     fetchData(); 
-    // Update price every 30 seconds
     const interval = setInterval(async () => {
       const p = await fetch('/api/price').then(r => r.json());
       if (p.success) setPrice(p.data);
@@ -78,10 +77,8 @@ export default function App() {
             )}
           </AnimatePresence>
         </main>
-
         <Footer />
       </div>
-
       <AnimatePresence>
         {selectedUser && <UserModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
       </AnimatePresence>
