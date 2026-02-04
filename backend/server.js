@@ -2,7 +2,7 @@
  * RedStone Tweet Tracker v7.2 (twitterapi.io)
  * - twitterapi.io (X-API-Key)
  * - Weekly stats (Monday 00:00 UTC to Sunday)
- * - Auto-refresh every 6 hours
+ * - Auto-refresh every 12 hours
  * - Live RED price
  * - Fix weekly filter by storing created_at as ISO (toISOString)
  * - Optional one-time clear: CLEAR_TWEETS_ON_START=true
@@ -89,7 +89,7 @@ if ((process.env.CLEAR_TWEETS_ON_START || '').toLowerCase() === 'true') {
 const TWITTERAPI_KEY = process.env.TWITTERAPI_IO_KEY;
 
 // Blacklist
-const BLACKLIST = ['murder','killed','death','minecraft','redstone dust','redstone torch'];
+const BLACKLIST = ['murder','killed','death','minecraft','redstone dust','redstone torch','arsenal','military','army','navy','space command','spacecom','huntsville','alabama','headquarters','pentagon','delegation'];
 function isRelevant(text) {
   const lower = (text || '').toLowerCase();
   return !BLACKLIST.some(w => lower.includes(w));
@@ -97,14 +97,36 @@ function isRelevant(text) {
 
 function hasRedstoneSignal(text) {
   const s = (text || "").toLowerCase();
-  return (
-    s.includes("redstone") ||
-    s.includes("red stone") ||
+  
+  // Must have crypto/defi context
+  const hasCryptoContext = 
     s.includes("@redstone_defi") ||
-    s.includes("#redstone") ||
-    s.includes("redstone bolt") ||
-    s.includes("redstone oracle")
-  );
+    s.includes("redstone oracle") ||
+    s.includes("redstone defi") ||
+    s.includes("$red") ||
+    s.includes("crypto") ||
+    s.includes("defi") ||
+    s.includes("oracle") ||
+    s.includes("blockchain") ||
+    s.includes("onchain") ||
+    s.includes("web3");
+  
+  // Exclude military/political
+  const isMilitary = 
+    s.includes("arsenal") ||
+    s.includes("military") ||
+    s.includes("army") ||
+    s.includes("space command") ||
+    s.includes("spacecom") ||
+    s.includes("huntsville") ||
+    s.includes("alabama") ||
+    s.includes("pentagon") ||
+    s.includes("headquarters") ||
+    s.includes("delegation");
+  
+  if (isMilitary) return false;
+  
+  return hasCryptoContext;
 }
 
 
@@ -453,7 +475,7 @@ async function autoRefresh() {
 
 // Start refresh cycles
 setTimeout(autoRefresh, 5000);
-setInterval(autoRefresh, 6 * 60 * 60 * 1000); // Every 6 hours
+setInterval(autoRefresh, 12 * 60 * 60 * 1000); // Every 12 hours
 setInterval(fetchRedPrice, 30000); // Price every 30 sec
 fetchRedPrice();
 
