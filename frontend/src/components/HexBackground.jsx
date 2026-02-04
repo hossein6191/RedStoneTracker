@@ -41,10 +41,7 @@ function FloatingLogos() {
           }))
           .filter(logo => logo.y > -15 && logo.y < 115);
 
-        while (updated.length < 12) {
-          updated.push(createLogo());
-        }
-
+        while (updated.length < 12) updated.push(createLogo());
         return updated;
       });
     }, 50);
@@ -53,11 +50,7 @@ function FloatingLogos() {
   }, [createLogo]);
 
   const handlePop = (logo) => {
-    const newPop = {
-      id: Date.now(),
-      x: logo.x,
-      y: logo.y
-    };
+    const newPop = { id: Date.now(), x: logo.x, y: logo.y };
 
     setPops(prev => [...prev, newPop]);
     setLogos(prev => prev.filter(l => l.id !== logo.id));
@@ -67,22 +60,15 @@ function FloatingLogos() {
     }, 1500);
   };
 
-  const handleEnter = (e, logo) => {
-    const img = e.currentTarget.querySelector('img');
-    if (img) img.style.transform = `rotate(${logo.rotation}deg) scale(1.5)`;
-  };
-
-  const handleLeave = (e, logo) => {
-    const img = e.currentTarget.querySelector('img');
-    if (img) img.style.transform = `rotate(${logo.rotation}deg) scale(1)`;
-  };
-
   return (
     <>
       {logos.map(logo => (
         <button
           key={logo.id}
           onClick={() => handlePop(logo)}
+          tabIndex={-1}
+          onMouseDown={(e) => e.preventDefault()}
+          onFocus={(e) => e.currentTarget.blur()}
           style={{
             position: 'fixed',
             left: `${logo.x}%`,
@@ -91,29 +77,48 @@ function FloatingLogos() {
             height: logo.size,
             opacity: logo.opacity,
             zIndex: 99999,
-            background: 'none',
+            background: 'transparent',
             border: 'none',
             padding: 0,
-            cursor: 'pointer'
+            margin: 0,
+            cursor: 'pointer',
+            outline: 'none',
+            boxShadow: 'none',
+            appearance: 'none',
+            WebkitTapHighlightColor: 'transparent'
           }}
-          onMouseEnter={(e) => handleEnter(e, logo)}
-          onMouseLeave={(e) => handleLeave(e, logo)}
         >
-          <img
-            src="/redstone-logo-transparent.png"
-            alt=""
+          <div
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'contain',
-              filter: 'drop-shadow(0 0 10px rgba(174,8,34,0.5))',
-              pointerEvents: 'none',
-              transform: `rotate(${logo.rotation}deg) scale(1)`,
+              transform: `rotate(${logo.rotation}deg)`,
               transition: 'transform 0.2s',
               display: 'block'
             }}
-            draggable={false}
-          />
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1.5)`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1)`;
+            }}
+          >
+            <img
+              src="/redstone-logo-transparent.png"
+              alt=""
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                display: 'block',
+                pointerEvents: 'none',
+
+                // تست اگر هنوز مربع بود این خط رو موقتاً کامنت کن
+                filter: 'drop-shadow(0 0 10px rgba(174,8,34,0.5))'
+              }}
+            />
+          </div>
         </button>
       ))}
 
