@@ -89,36 +89,28 @@ function FloatingLogos() {
           }}
         >
           <div
-            style={{
-              width: '100%',
-              height: '100%',
-              transform: `rotate(${logo.rotation}deg)`,
-              transition: 'transform 0.2s',
-              display: 'block'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1.5)`;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1)`;
-            }}
-          >
-            <img
-              src="/redstone-logo-transparent.png"
-              alt=""
-              draggable={false}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                display: 'block',
-                pointerEvents: 'none',
+  style={{
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+    borderRadius: '50%' // یا 8px اگه دایره نمیخوای
+  }}
+>
+  <img
+    src="/redstone-logo-transparent.png"
+    alt=""
+    draggable={false}
+    style={{
+      width: '100%',
+      height: '100%',
+      objectFit: 'contain',
+      display: 'block',
+      pointerEvents: 'none',
+      filter: 'drop-shadow(0 0 10px rgba(174,8,34,0.5))'
+    }}
+  />
+</div>
 
-                // تست اگر هنوز مربع بود این خط رو موقتاً کامنت کن
-                filter: 'drop-shadow(0 0 10px rgba(174,8,34,0.5))'
-              }}
-            />
-          </div>
         </button>
       ))}
 
