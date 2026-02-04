@@ -54,32 +54,30 @@ export default function App() {
   return (
     <div className="min-h-screen relative overflow-hidden bg-[#0a0408]">
       <HexBackground />
-      <div className="relative z-10 pointer-events-none">
-        <div className="pointer-events-auto">
-          <Header />
-          <PriceBar price={price} />
-          
-          <main className="container mx-auto px-4 pb-20 max-w-7xl">
-            <AnimatePresence mode="wait">
-              {loading ? (
-                <motion.div key="load" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex justify-center items-center min-h-[60vh]">
-                  <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-[#AE0822]/20 border-t-[#AE0822] rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-white/50">Loading data...</p>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div key="content" initial={{opacity:0}} animate={{opacity:1}} className="space-y-16">
-                  <HeroSection top3={top3} onUserClick={openUser} />
-                  <StatsSection stats={stats} />
-                  <SearchSection onUserClick={openUser} />
-                  <LeaderboardSection leaderboard={leaderboard} onUserClick={openUser} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </main>
-          <Footer />
-        </div>
+      <div className="relative z-10">
+        <Header />
+        <PriceBar price={price} />
+        
+        <main className="container mx-auto px-4 pb-20 max-w-7xl">
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div key="load" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex justify-center items-center min-h-[60vh]">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-[#AE0822]/20 border-t-[#AE0822] rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-white/50">Loading data...</p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div key="content" initial={{opacity:0}} animate={{opacity:1}} className="space-y-16">
+                <HeroSection top3={top3} onUserClick={openUser} />
+                <StatsSection stats={stats} />
+                <SearchSection onUserClick={openUser} />
+                <LeaderboardSection leaderboard={leaderboard} onUserClick={openUser} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+        <Footer />
       </div>
       <AnimatePresence>
         {selectedUser && <UserModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
