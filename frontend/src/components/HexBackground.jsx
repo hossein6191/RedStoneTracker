@@ -97,7 +97,7 @@ function FloatingLogos() {
   }}
 >
   <img
-    src="/redstone-logo-transparent.png.png"
+    src="/redstone-logo"
     alt=""
     draggable={false}
     style={{
