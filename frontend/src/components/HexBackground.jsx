@@ -90,7 +90,7 @@ function FloatingLogos() {
           onMouseLeave={(e) => e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1)`}
         >
           <img
-            src="/redstone-logo.png.png"
+           src="/redstone-logo-transparent.png"
             alt=""
             style={{
               width: '100%',
