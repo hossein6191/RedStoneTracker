@@ -11,12 +11,12 @@ export default function HexBackground() {
     
     return {
       id,
-      x: Math.random() * 90 + 5, // 5-95%
+      x: Math.random() * 85 + 5,
       y: fromTop ? -10 : 110,
       direction: fromTop ? 1 : -1,
       speed: Math.random() * 0.3 + 0.2,
-      size: Math.random() * 20 + 25, // 25-45px
-      opacity: Math.random() * 0.3 + 0.15,
+      size: Math.random() * 20 + 30,
+      opacity: Math.random() * 0.3 + 0.2,
       rotation: Math.random() * 360,
       rotationSpeed: (Math.random() - 0.5) * 2
     };
@@ -24,9 +24,9 @@ export default function HexBackground() {
 
   // Initialize logos
   useEffect(() => {
-    const initial = Array.from({ length: 12 }, createLogo).map((logo, i) => ({
-      ...logo,
-      y: Math.random() * 100 // Spread across screen initially
+    const initial = Array.from({ length: 12 }, () => ({
+      ...createLogo(),
+      y: Math.random() * 100
     }));
     setLogos(initial);
   }, [createLogo]);
@@ -41,7 +41,6 @@ export default function HexBackground() {
           rotation: logo.rotation + logo.rotationSpeed
         })).filter(logo => logo.y > -15 && logo.y < 115);
 
-        // Add new logos if needed
         while (updated.length < 12) {
           updated.push(createLogo());
         }
@@ -53,33 +52,27 @@ export default function HexBackground() {
     return () => clearInterval(interval);
   }, [createLogo]);
 
-  // Remove pop after animation
-  useEffect(() => {
-    if (pops.length > 0) {
-      const timer = setTimeout(() => {
-        setPops(prev => prev.slice(1));
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [pops]);
-
-  // Handle logo click
-  const handlePop = (logo, e) => {
-    e.stopPropagation();
-    
-    // Add pop effect
-    setPops(prev => [...prev, {
-      id: logo.id,
+  // Handle logo click - POP!
+  const handlePop = (logo) => {
+    // Add pop effect at logo position
+    const newPop = {
+      id: Date.now(),
       x: logo.x,
       y: logo.y
-    }]);
+    };
+    setPops(prev => [...prev, newPop]);
 
     // Remove clicked logo
     setLogos(prev => prev.filter(l => l.id !== logo.id));
+
+    // Remove pop after 1.5 seconds
+    setTimeout(() => {
+      setPops(prev => prev.filter(p => p.id !== newPop.id));
+    }, 1500);
   };
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 z-0 overflow-hidden">
       {/* Base gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#0a0408] to-[#0f0507]" />
       
@@ -91,7 +84,8 @@ export default function HexBackground() {
       {logos.map(logo => (
         <div
           key={logo.id}
-          className="absolute cursor-pointer pointer-events-auto transition-transform hover:scale-125"
+          onClick={() => handlePop(logo)}
+          className="absolute cursor-pointer hover:scale-150 transition-transform duration-200"
           style={{
             left: `${logo.x}%`,
             top: `${logo.y}%`,
@@ -99,51 +93,47 @@ export default function HexBackground() {
             height: logo.size,
             opacity: logo.opacity,
             transform: `rotate(${logo.rotation}deg)`,
+            zIndex: 5
           }}
-          onClick={(e) => handlePop(logo, e)}
         >
           <img
             src="/redstone-logo.png.png"
             alt=""
             className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(174,8,34,0.5)]"
             draggable={false}
+            style={{ pointerEvents: 'none' }}
           />
         </div>
       ))}
 
-      {/* Pop effects */}
+      {/* Pop effects with Gminers text */}
       {pops.map(pop => (
         <div
           key={pop.id}
-          className="absolute pointer-events-none"
+          className="absolute z-50"
           style={{
             left: `${pop.x}%`,
             top: `${pop.y}%`,
-            transform: 'translate(-50%, -50%)'
           }}
         >
-          {/* Burst particles */}
-          <div className="relative">
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-2 h-2 bg-[#AE0822] rounded-full animate-ping"
-                style={{
-                  animation: 'burst 0.6s ease-out forwards',
-                  transform: `rotate(${i * 45}deg) translateX(20px)`,
-                }}
-              />
-            ))}
-          </div>
+          {/* Particles */}
+          {[...Array(8)].map((_, i) => (
+            <span
+              key={i}
+              className="absolute w-3 h-3 bg-[#AE0822] rounded-full"
+              style={{
+                animation: `particle-${i} 0.8s ease-out forwards`,
+              }}
+            />
+          ))}
           
           {/* Gminers text */}
           <div 
-            className="absolute text-[#AE0822] font-bold text-lg whitespace-nowrap"
+            className="absolute left-1/2 text-2xl font-bold whitespace-nowrap z-50"
             style={{
-              animation: 'popText 1s ease-out forwards',
-              textShadow: '0 0 20px rgba(174,8,34,0.8)',
-              left: '50%',
-              transform: 'translateX(-50%)'
+              color: '#AE0822',
+              textShadow: '0 0 20px #AE0822, 0 0 40px #AE0822',
+              animation: 'gminers-pop 1.2s ease-out forwards',
             }}
           >
             Gminers ⛏️
@@ -151,31 +141,32 @@ export default function HexBackground() {
         </div>
       ))}
 
-      {/* CSS animations */}
+      {/* Animations */}
       <style>{`
-        @keyframes burst {
-          0% {
-            opacity: 1;
-            transform: rotate(var(--rotate, 0deg)) translateX(0);
-          }
-          100% {
-            opacity: 0;
-            transform: rotate(var(--rotate, 0deg)) translateX(50px);
-          }
-        }
+        @keyframes particle-0 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(40px, -40px); } }
+        @keyframes particle-1 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(50px, 0); } }
+        @keyframes particle-2 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(40px, 40px); } }
+        @keyframes particle-3 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(0, 50px); } }
+        @keyframes particle-4 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-40px, 40px); } }
+        @keyframes particle-5 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-50px, 0); } }
+        @keyframes particle-6 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-40px, -40px); } }
+        @keyframes particle-7 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(0, -50px); } }
         
-        @keyframes popText {
-          0% {
-            opacity: 0;
-            transform: translateX(-50%) translateY(0) scale(0.5);
+        @keyframes gminers-pop {
+          0% { 
+            opacity: 0; 
+            transform: translateX(-50%) translateY(0) scale(0.3);
           }
-          20% {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-10px) scale(1.2);
+          15% { 
+            opacity: 1; 
+            transform: translateX(-50%) translateY(-20px) scale(1.3);
           }
-          100% {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-40px) scale(1);
+          30% {
+            transform: translateX(-50%) translateY(-25px) scale(1);
+          }
+          100% { 
+            opacity: 0; 
+            transform: translateX(-50%) translateY(-60px) scale(0.8);
           }
         }
       `}</style>
