@@ -224,14 +224,15 @@ async function fetchUserInfo(username) {
     if (!u?.id) return null;
 
     return {
-      id: u.id,
-      username: u.userName || u.username || username,
-      name: u.name || '',
-      profile_image_url: u.profilePicture || '',
-      followers_count: u.followers || 0,
-      description: u.description || '',
-      verified: u.isBlueVerified ? 1 : 0
-    };
+  id: u.id,
+  username: u.userName || u.username || username,
+  name: u.name || '',
+  profile_image_url: u.profilePicture || '',
+  banner_url: u.coverPicture || u.profileBannerUrl || '',
+  followers_count: u.followers || 0,
+  description: u.description || '',
+  verified: u.isBlueVerified ? 1 : 0
+};
   } catch (e) {
     return null;
   }
