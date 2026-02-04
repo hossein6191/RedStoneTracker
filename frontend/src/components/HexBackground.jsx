@@ -8,7 +8,7 @@ function FloatingLogos() {
   const createLogo = useCallback(() => {
     const id = Date.now() + Math.random();
     const fromTop = Math.random() > 0.5;
-    
+
     return {
       id,
       x: Math.random() * 85 + 5,
@@ -33,11 +33,13 @@ function FloatingLogos() {
   useEffect(() => {
     const interval = setInterval(() => {
       setLogos(prev => {
-        let updated = prev.map(logo => ({
-          ...logo,
-          y: logo.y + (logo.speed * logo.direction),
-          rotation: logo.rotation + logo.rotationSpeed
-        })).filter(logo => logo.y > -15 && logo.y < 115);
+        let updated = prev
+          .map(logo => ({
+            ...logo,
+            y: logo.y + logo.speed * logo.direction,
+            rotation: logo.rotation + logo.rotationSpeed
+          }))
+          .filter(logo => logo.y > -15 && logo.y < 115);
 
         while (updated.length < 12) {
           updated.push(createLogo());
@@ -56,6 +58,7 @@ function FloatingLogos() {
       x: logo.x,
       y: logo.y
     };
+
     setPops(prev => [...prev, newPop]);
     setLogos(prev => prev.filter(l => l.id !== logo.id));
 
@@ -64,9 +67,18 @@ function FloatingLogos() {
     }, 1500);
   };
 
+  const handleEnter = (e, logo) => {
+    const img = e.currentTarget.querySelector('img');
+    if (img) img.style.transform = `rotate(${logo.rotation}deg) scale(1.5)`;
+  };
+
+  const handleLeave = (e, logo) => {
+    const img = e.currentTarget.querySelector('img');
+    if (img) img.style.transform = `rotate(${logo.rotation}deg) scale(1)`;
+  };
+
   return (
     <>
-      {/* Floating logos */}
       {logos.map(logo => (
         <button
           key={logo.id}
@@ -78,33 +90,33 @@ function FloatingLogos() {
             width: logo.size,
             height: logo.size,
             opacity: logo.opacity,
-            transform: `rotate(${logo.rotation}deg)`,
             zIndex: 99999,
             background: 'none',
             border: 'none',
             padding: 0,
-            cursor: 'pointer',
-            transition: 'transform 0.2s',
+            cursor: 'pointer'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1.5)`}
-          onMouseLeave={(e) => e.currentTarget.style.transform = `rotate(${logo.rotation}deg) scale(1)`}
+          onMouseEnter={(e) => handleEnter(e, logo)}
+          onMouseLeave={(e) => handleLeave(e, logo)}
         >
           <img
-           src="/redstone-logo-transparent.png"
+            src="/redstone-logo-transparent.png"
             alt=""
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'contain',
               filter: 'drop-shadow(0 0 10px rgba(174,8,34,0.5))',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              transform: `rotate(${logo.rotation}deg) scale(1)`,
+              transition: 'transform 0.2s',
+              display: 'block'
             }}
             draggable={false}
           />
         </button>
       ))}
 
-      {/* Pop effects */}
       {pops.map(pop => (
         <div
           key={pop.id}
@@ -116,7 +128,6 @@ function FloatingLogos() {
             pointerEvents: 'none'
           }}
         >
-          {/* Particles */}
           {[...Array(8)].map((_, i) => (
             <span
               key={i}
@@ -126,13 +137,12 @@ function FloatingLogos() {
                 height: 12,
                 backgroundColor: '#AE0822',
                 borderRadius: '50%',
-                animation: `particle-${i} 0.8s ease-out forwards`,
+                animation: `particle-${i} 0.8s ease-out forwards`
               }}
             />
           ))}
-          
-          {/* Gminers text */}
-          <div 
+
+          <div
             style={{
               position: 'absolute',
               left: '50%',
@@ -141,7 +151,7 @@ function FloatingLogos() {
               whiteSpace: 'nowrap',
               color: '#AE0822',
               textShadow: '0 0 20px #AE0822, 0 0 40px #AE0822',
-              animation: 'gminers-pop 1.2s ease-out forwards',
+              animation: 'gminers-pop 1.2s ease-out forwards'
             }}
           >
             Gminers ⛏️
@@ -158,7 +168,7 @@ function FloatingLogos() {
         @keyframes particle-5 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-50px, 0); } }
         @keyframes particle-6 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(-40px, -40px); } }
         @keyframes particle-7 { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(0, -50px); } }
-        
+
         @keyframes gminers-pop {
           0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.3); }
           15% { opacity: 1; transform: translateX(-50%) translateY(-20px) scale(1.3); }
@@ -179,14 +189,12 @@ export default function HexBackground() {
 
   return (
     <>
-      {/* Background gradient */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#0a0408] to-[#0f0507]" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#AE0822] opacity-10 blur-[120px] rounded-full" />
         <div className="absolute bottom-0 left-1/4 w-[400px] h-[200px] bg-[#AE0822] opacity-5 blur-[100px] rounded-full" />
       </div>
 
-      {/* Floating logos - rendered via portal to body */}
       {mounted && createPortal(<FloatingLogos />, document.body)}
     </>
   );
