@@ -362,11 +362,16 @@ function saveToDB(tweets, users) {
   VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 `);
 
-  const it = db.prepare(`
-    INSERT OR REPLACE INTO tweets
-    (id,user_id,text,created_at,likes_count,retweets_count,replies_count,views_count,url,is_reply,fetched_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-  `);
+ const it = db.prepare(`
+  INSERT INTO tweets (id,user_id,text,created_at,likes_count,retweets_count,replies_count,views_count,url,is_reply,fetched_at)
+  VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+  ON CONFLICT(id) DO UPDATE SET
+    likes_count = excluded.likes_count,
+    retweets_count = excluded.retweets_count,
+    replies_count = excluded.replies_count,
+    views_count = excluded.views_count,
+    fetched_at = CURRENT_TIMESTAMP
+`);
 
   let count = 0;
 
