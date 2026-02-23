@@ -493,7 +493,7 @@ async function autoRefresh() {
   for (const q of queries) {
     let cursor = "";
 
-    for (let page = 0; page < 10; page++) {
+    for (let page = 0; page < 4; page++) {
       const data = await fetchTwitterAdvancedSearch(q, cursor);
       if (!data) break;
 
