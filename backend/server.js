@@ -1,5 +1,5 @@
 /**
- * RedStone Tweet Tracker v7.3 (twitterapi.io)
+ * RedStone Tweet Tracker v7.4 (twitterapi.io)
  * - twitterapi.io (X-API-Key)
  * - Weekly stats (Monday 00:00 UTC to Sunday)
  * - Auto-refresh every 24 hours
@@ -8,6 +8,7 @@
  * - Banner support
  * - Smart RedStone signal detection
  * - Exact "RedStone" case sensitive detection
+ * - Fixed: Delete users on weekly reset
  */
 
 if (process.env.NODE_ENV !== 'production') {
@@ -79,11 +80,12 @@ if (!resetRow) {
 
 console.log('Database ready');
 
-// Optional one-time clear
+// Optional one-time clear (delete both tweets AND users)
 if ((process.env.CLEAR_TWEETS_ON_START || '').toLowerCase() === 'true') {
   db.exec('DELETE FROM tweets');
+  db.exec('DELETE FROM users');
   db.prepare('UPDATE weekly_reset SET last_reset = ? WHERE id = 1').run(new Date().toISOString());
-  console.log('CLEAR_TWEETS_ON_START=true -> tweets cleared');
+  console.log('CLEAR_TWEETS_ON_START=true -> tweets and users cleared');
 }
 
 // =====================
@@ -173,7 +175,7 @@ function getWeekStartISO() {
   return monday.toISOString();
 }
 
-// Weekly reset (clears DB when new week starts)
+// Weekly reset (clears BOTH tweets AND users when new week starts)
 function checkWeeklyReset() {
   const lastReset = db.prepare('SELECT last_reset FROM weekly_reset WHERE id = 1').get();
   const lastResetDate = new Date(lastReset?.last_reset || 0);
@@ -182,8 +184,9 @@ function checkWeeklyReset() {
   if (lastResetDate < currentWeekStart) {
     console.log('New week! Resetting data...');
     db.exec('DELETE FROM tweets');
+    db.exec('DELETE FROM users');
     db.prepare('UPDATE weekly_reset SET last_reset = ? WHERE id = 1').run(new Date().toISOString());
-    console.log('Weekly reset complete');
+    console.log('Weekly reset complete - tweets and users cleared');
     return true;
   }
   return false;
@@ -459,7 +462,7 @@ async function fetchRedPrice() {
 }
 
 // =====================
-// Auto-refresh
+// Auto-refresh (ONLY runs once per 24 hours)
 // =====================
 async function autoRefresh() {
   console.log('\n=== AUTO-REFRESH START ===');
@@ -485,7 +488,7 @@ async function autoRefresh() {
 
   let total = 0;
 
-  // Step 1: Search queries for new tweets
+  // Step 1: Search queries for new tweets (9 queries x 10 pages max = 90 calls max)
   console.log('Step 1: Searching for new tweets...');
   for (const q of queries) {
     let cursor = "";
@@ -503,6 +506,7 @@ async function autoRefresh() {
       });
       total += saveToDB(filteredTweets, parsed.users);
 
+      // Stop if no more pages
       if (!parsed.has_next_page) break;
       cursor = parsed.next_cursor;
 
@@ -510,7 +514,8 @@ async function autoRefresh() {
     }
   }
 
-  // Step 2: Update ALL existing users tweets for fresh view/like counts
+  // Step 2: Update existing users tweets for fresh view/like counts
+  // Only users that have tweets THIS WEEK (not old users from previous weeks)
   console.log('Step 2: Updating existing users...');
   const existingUsers = db.prepare(`
     SELECT DISTINCT u.username 
@@ -541,17 +546,20 @@ async function autoRefresh() {
 }
 
 // Start refresh cycles
+// autoRefresh runs 5 seconds after server start, then every 24 hours
 setTimeout(autoRefresh, 5000);
-setInterval(autoRefresh, 24 * 60 * 60 * 1000); // Every 24 hours
-setInterval(fetchRedPrice, 30000); // Price every 30 seconds
+setInterval(autoRefresh, 24 * 60 * 60 * 1000);
+
+// Price updates every 30 seconds (free, no token cost)
+setInterval(fetchRedPrice, 30000);
 fetchRedPrice();
 
 // =====================
-// API ROUTES
+// API ROUTES (NO API CALLS - only database queries)
 // =====================
 app.get('/api/health', (req, res) => {
   const stats = db.prepare('SELECT COUNT(*) as tweets FROM tweets WHERE is_reply = 0').get();
-  res.json({ status: 'ok', version: '7.3', tweets: stats.tweets, has_token: !!TWITTERAPI_KEY });
+  res.json({ status: 'ok', version: '7.4', tweets: stats.tweets, has_token: !!TWITTERAPI_KEY });
 });
 
 app.get('/api/price', (req, res) => {
@@ -633,7 +641,8 @@ app.get('/api/leaderboard', (req, res) => {
   }
 });
 
-app.get('/api/search', async (req, res) => {
+// Search - NO API CALL, only database
+app.get('/api/search', (req, res) => {
   try {
     const q = (req.query.q || '').trim();
     if (q.length < 2) return res.json({ success: true, data: [] });
@@ -641,8 +650,8 @@ app.get('/api/search', async (req, res) => {
     const weekStart = getWeekStartISO();
     const searchTerm = `%${q.toLowerCase()}%`;
 
-    // Search in DB only (no API call to save tokens)
-    let results = db.prepare(`
+    // Search in DB only (no API call)
+    const results = db.prepare(`
       SELECT u.id, u.username, u.name, u.profile_image_url, u.verified,
         COUNT(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN 1 END) as tweet_count,
         COALESCE(SUM(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN t.views_count ELSE 0 END), 0) as total_views
@@ -670,12 +679,13 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-app.get('/api/user/:username', async (req, res) => {
+// User profile - NO API CALL, only database
+app.get('/api/user/:username', (req, res) => {
   try {
     const username = (req.params.username || '').toLowerCase();
     const weekStart = getWeekStartISO();
 
-    let user = db.prepare(`
+    const user = db.prepare(`
       SELECT u.*,
         COUNT(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN 1 END) as tweet_count,
         COALESCE(SUM(CASE WHEN t.is_reply = 0 AND t.created_at >= ? THEN t.likes_count ELSE 0 END), 0) as total_likes,
@@ -718,6 +728,6 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\nRedStone Tracker v7.3 running on port ${PORT}`);
+  console.log(`\nRedStone Tracker v7.4 running on port ${PORT}`);
   console.log(`twitterapi.io: ${TWITTERAPI_KEY ? 'Configured' : 'Missing'}\n`);
 });
